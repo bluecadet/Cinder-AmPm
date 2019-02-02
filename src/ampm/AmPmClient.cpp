@@ -6,6 +6,9 @@ using namespace ci;
 using namespace ci::app;
 using namespace std;
 
+// Based on Stimulant's Cinder Client example:
+// https://github.com/stimulant/ampm/blob/master/samples/Cinder/Client/src/AMPMClient.cpp
+
 namespace ampm {
 
 	AmPmClient::AmPmClient(Options options) :
@@ -17,7 +20,6 @@ namespace ampm {
 		mSender.bind();
 		mReceiver.bind();
 		mReceiver.listen(nullptr);
-		//startReceiving();
 
 		if (mOptions.autoUpdate) {
 			startAutoUpdate();
@@ -35,14 +37,11 @@ namespace ampm {
 		}
 	}
 
-	void AmPmClient::sendHeartbeat() {
-		osc::Message message;
-		message.setAddress("/heart");
-		mSender.send(message);
-	}
-
 	void AmPmClient::update() {
-		sendHeartbeat();
+		if (mOptions.framesPerHeartbeat <= 1 || --mFramesUntilHeartbeat <= 0) {
+			sendHeartbeat();
+			mFramesUntilHeartbeat = mOptions.framesPerHeartbeat;
+		}
 	}
 
 	void AmPmClient::startAutoUpdate() {
@@ -65,7 +64,6 @@ namespace ampm {
 		return config;
 	}
 
-
 	void AmPmClient::startReceiving() {
 		mReceiver.listen([this](asio::error_code error, asio::ip::udp::endpoint endpoint) -> bool {
 			if (error) {
@@ -82,6 +80,12 @@ namespace ampm {
 		});
 	}
 
+	void AmPmClient::sendHeartbeat() {
+		osc::Message message;
+		message.setAddress("/heart");
+		mSender.send(message);
+	}
+
 	void AmPmClient::log(const log::Metadata & meta, const std::string & text) {
 		osc::Message message;
 		message.setAddress("/log");
@@ -93,6 +97,26 @@ namespace ampm {
 		arguments.pushBack(JsonTree("lineNum", meta.mLocation.getLineNumber()));
 		message.append(arguments.serialize());
 
+		mSender.send(message);
+	}
+
+	void AmPmClient::sendAnalyticsEvent(const std::string & category, const std::string & action, const std::string & label, int value) {
+		osc::Message message;
+		message.setAddress("/event");
+
+		JsonTree arguments;
+		arguments.pushBack(JsonTree("Category", category));
+		arguments.pushBack(JsonTree("Action", action));
+		arguments.pushBack(JsonTree("Label", label));
+		arguments.pushBack(JsonTree("Value", value));
+		message.append(arguments.serialize());
+		mSender.send(message);
+	}
+
+	void AmPmClient::sendCustomMessage(const std::string & address, const ci::JsonTree & msg) {
+		osc::Message message;
+		message.setAddress(address);
+		message.append(msg.serialize());
 		mSender.send(message);
 	}
 

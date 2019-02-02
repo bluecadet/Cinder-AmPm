@@ -1,0 +1,18 @@
+{
+    "default": {
+        "persistence": {
+            "launchCommand": "vc2015/x64/Release/BasicSample.exe",
+            "maxMemory": 0,
+            "startupTimeout": 10,
+            "heartbeatTimeout": 5
+        }
+    },
+    "dev": {
+        "persistence": {
+            "launchCommand": "vc2015/x64/Debug/BasicSample.exe",
+            "maxMemory": 0,
+            "startupTimeout": 10,
+            "heartbeatTimeout": 5
+        }
+    }
+}
